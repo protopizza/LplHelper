@@ -1,0 +1,29 @@
+[
+    {
+        "children": [
+            {
+                "children": [
+                    {
+                        "caption": "LplHelper",
+                        "children": [
+                            {
+                                "args":
+                                {
+                                    "base_file": "${packages}/LplHelper/LplHelper.sublime-settings",
+                                    "default": "{\n\t$0\n}\n"
+                                },
+                                "caption": "Settings",
+                                "command": "edit_settings"
+                            },
+                            {
+                                "caption": "-"
+                            }
+                        ]
+                    }
+                ],
+                "id": "package-settings"
+            }
+        ],
+        "id": "preferences"
+    }
+]

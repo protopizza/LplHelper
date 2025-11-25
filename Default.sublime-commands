@@ -1,0 +1,54 @@
+[
+    {
+        "caption": "LplHelper: Sort",
+        "command": "lpl_sort"
+    },
+    {
+        "caption": "LplHelper: Find Missing Entries",
+        "command": "lpl_find_missing_entries"
+    },
+    {
+        "caption": "LplHelper: Add Missing Entries",
+        "command": "lpl_add_missing_entries"
+    },
+    {
+        "caption": "LplHelper: Validate Paths",
+        "command": "lpl_validate_paths"
+    },
+    {
+        "caption": "LplHelper: Validate CRC",
+        "command": "lpl_validate_crc"
+    },
+    {
+        "caption": "LplHelper: Update CRC",
+        "command": "lpl_update_crc"
+    },
+    {
+        "caption": "LplHelper: Database Check CRC",
+        "command": "lpl_database_check_crc"
+    },
+    {
+        "caption": "LplHelper: Count Thumbnails",
+        "command": "lpl_count_thumbnails"
+    },
+    {
+        "caption": "LplHelper: Validate Thumbnails",
+        "command": "lpl_validate_thumbnails"
+    },
+    {
+        "caption": "LplHelper: Update Thumbnails",
+        "command": "lpl_update_thumbnails"
+    },
+    {
+        "caption": "LplHelper: Add Missing Thumbnails",
+        "command": "lpl_add_missing_thumbnails"
+    },
+    {
+        "caption": "LplHelper: Convert Paths for Windows",
+        "command": "lpl_convert_paths_for_windows"
+    },
+    {
+        "caption": "LplHelper: Convert Paths for MacOS",
+        "command": "lpl_convert_paths_for_macos"
+    }
+]

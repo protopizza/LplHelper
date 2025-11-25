@@ -1,0 +1,22 @@
+{
+    "chd_serial_path": "",
+    "extension_exclusions": [
+        ".exe",
+        ".bat",
+        ".bin",
+        ".rom",
+        ".msu",
+        ".pcm",
+        ".ngp"
+    ],
+    "macos_rom_path": "",
+    "macos_core_path": "",
+    "name_exclusions": [
+    ],
+    "retroarch_rdb_path": "",
+    "retroarch_local_thumbnails_path": "",
+    "retroarch_remote_thumbnails_path": "http://thumbnails.libretro.com",
+    "translation_label_mapping_file": "",
+    "windows_rom_path": "",
+    "windows_core_path": ""
+}
