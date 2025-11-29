@@ -3,7 +3,7 @@ import math
 import os
 import sys
 
-def get_rdb_files(extension):
+def __get_rdb_files(extension):
     if extension == ".zip":
         return [
                 "FBNeo - Arcade Games.rdb",
@@ -302,13 +302,15 @@ class RdbReader:
 
         return result
 
+    '''
+    Returns list of games round in the specified RDB.
+    '''
     def read(self, path):
         print("Reading " + path + "...")
         with open(path, 'rb') as f:
             self.rdb_data = f.read()
 
         results = []
-        objects = []
 
         if bytes_to_hex(self.rdb_data[0:8]) != RdbReader.MAGIC_NUMBER:
             raise Exception("Not valid RDB format.")
@@ -345,46 +347,11 @@ class RdbReader:
         return results
 
 
-def load_rdbs(rdb_dir, extensions):
-    result = {}
-    for extension in extensions:
-        rdb_files = get_rdb_files(extension)
-        for rdb_file in rdb_files:
-            key = rdb_file[:-4]
-            if key not in result:
-                path = os.path.join(rdb_dir, rdb_file)
-                reader = RdbReader()
-                result[key] = reader.read(path)
-    return result
-
-
-def find_game_in_rdbs(rdbs, name, crc32, preferred_system=None):
-    result = (SearchResult.NOT_FOUND, 0)
-    if preferred_system and preferred_system in rdbs:
-        result = least_severe_result(result, find_game(rdbs[preferred_system], name, crc32))
-        if result[0] == SearchResult.FOUND:
-            return result
-
-    for key in rdbs:
-        if key == preferred_system:
-            continue
-        result = least_severe_result(result, find_game(rdbs[key], name, crc32))
-        if result[0] == SearchResult.FOUND:
-            break
-
-    return result
-
-
-def find_game(games, name, crc32):
+def __find_game(games, name, crc32):
     result = (SearchResult.NOT_FOUND, 0)
 
     for game in games:
-        if crc32 == game.crc32:
-            if name == game.name:
-                return (SearchResult.FOUND, 1)
-            else:
-                result = (SearchResult.CRC_MATCH_ONLY, game.name)
-        elif game.serial and crc32 == game.serial:
+        if crc32 == game.crc32 or (game.serial and crc32 == game.serial):
             if name == game.name:
                 return (SearchResult.FOUND, 1)
             else:
@@ -396,5 +363,40 @@ def find_game(games, name, crc32):
     return result
 
 
-def least_severe_result(result1, result2):
+def __least_severe_result(result1, result2):
     return result1 if result1 <= result2 else result2
+
+
+def load_rdbs(rdb_dir, extensions):
+    result = {}
+    for extension in extensions:
+        rdb_files = __get_rdb_files(extension)
+        for rdb_file in rdb_files:
+            key = rdb_file[:-4]
+            if key not in result:
+                path = os.path.join(rdb_dir, rdb_file)
+                reader = RdbReader()
+                result[key] = reader.read(path)
+    return result
+
+'''
+    Returns tuple of SearchResult and:
+        - 0 if not found
+        - 1 if found in database with exact name match
+        - name if found but specified name doesn't match
+'''
+def find_game_in_rdbs(rdbs, name, crc32, preferred_system=None):
+    result = (SearchResult.NOT_FOUND, 0)
+    if preferred_system and preferred_system in rdbs:
+        result = __least_severe_result(result, __find_game(rdbs[preferred_system], name, crc32))
+        if result[0] == SearchResult.FOUND:
+            return result
+
+    for key in rdbs:
+        if key == preferred_system:
+            continue
+        result = __least_severe_result(result, __find_game(rdbs[key], name, crc32))
+        if result[0] == SearchResult.FOUND:
+            break
+
+    return result
