@@ -568,7 +568,8 @@ class LplConvertPathsBaseCommand(LplBaseCommand):
 
         for item in self.json_data["items"]:
             item['path'] = self.convert_rom_path(item['path'])
-            item['core_path'] = self.convert_core_path(item['core_path'])
+            if item['core_path'] != "DETECT":
+                item['core_path'] = self.convert_core_path(item['core_path'])
 
 
     def convert_rom_path(self, path):
