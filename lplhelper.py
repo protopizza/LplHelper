@@ -10,8 +10,8 @@ import zlib
 from collections import OrderedDict
 from urllib.parse import quote
 
-from .lib import rdb
-from .lib import serial
+from . import rdb
+from . import serial
 
 class LplBaseCommand:
 
