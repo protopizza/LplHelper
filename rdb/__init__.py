@@ -9,6 +9,8 @@ def __get_rdb_files(extension):
                 "FBNeo - Arcade Games.rdb",
                 "Sega - Naomi.rdb"
                 ]
+    if extension == ".wsc":
+        return ["Bandai - WonderSwan Color.rdb"]
     if extension == ".fds":
         return ["Nintendo - Family Computer Disk System.rdb"]
     if extension == ".gba":
