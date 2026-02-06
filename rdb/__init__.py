@@ -11,6 +11,8 @@ def __get_rdb_files(extension):
                 ]
     if extension == ".wsc":
         return ["Bandai - WonderSwan Color.rdb"]
+    if extension == ".ws":
+        return ["Bandai - WonderSwan.rdb"]
     if extension == ".fds":
         return ["Nintendo - Family Computer Disk System.rdb"]
     if extension == ".gba":
