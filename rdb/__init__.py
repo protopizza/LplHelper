@@ -38,6 +38,8 @@ def __get_rdb_files(extension):
         return ["Nintendo - Super Nintendo Entertainment System.rdb"]
     if extension == ".vb":
         return ["Nintendo - Virtual Boy.rdb"]
+    if extension == ".gg":
+        return ["Sega - Game Gear.rdb"]
     if extension == ".sms":
         return ["Sega - Master System - Mark III.rdb"]
     if extension == ".md":
