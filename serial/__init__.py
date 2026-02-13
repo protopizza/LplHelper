@@ -9,7 +9,9 @@ def get_serial(path, system, chd_serial_path):
     elif system == "Nintendo - Wii":
         return __get_wii_serial(path)
 
-    elif system == "Sega - Dreamcast" or \
+    elif system == "NEC - PC Engine CD - TurboGrafx-CD" or \
+         system == "NEC - PC-FX" or \
+         system == "Sega - Dreamcast" or \
          system == "Sega - Mega-CD - Sega CD" or \
          system == "Sega - Saturn" or \
          system == "Sony - PlayStation 2" or \

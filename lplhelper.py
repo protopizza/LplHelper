@@ -234,10 +234,6 @@ class LplCrcBaseCommand(LplBaseCommand):
 
             # Handle CHD / RVZ (uses serial)
             if extension == ".chd" or extension == ".rvz":
-                # These are not currently supported
-                if self.get_current_playlist() == "NEC - PC-FX" or self.get_current_playlist() == "NEC - PC Engine CD - TurboGrafx-CD":
-                    continue
-
                 try:
                     serial = self.get_serial(item["path"])
                 except Exception as e:
