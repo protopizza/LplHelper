@@ -232,25 +232,32 @@ class LplCrcBaseCommand(LplBaseCommand):
             else:
                 existing_crc_type = None
 
+
+
             # Handle CHD / RVZ (uses serial)
             if extension == ".chd" or extension == ".rvz":
-                try:
-                    serial = self.get_serial(item["path"])
-                except Exception as e:
-                    self.warnings.append("[SKIPPING] " + item["label"] + " could not get serial due to: " + str(e))
+                 # These are not currently supported by chd_serial
+                if self.get_current_playlist() == "NEC - PC-FX" or self.get_current_playlist() == "NEC - PC Engine CD - TurboGrafx-CD":
+                    print("Getting normal CRC for PC-FX / PC Engine CD")
+
+                else:
+                    try:
+                        serial = self.get_serial(item["path"])
+                    except Exception as e:
+                        self.warnings.append("[SKIPPING] " + item["label"] + " could not get serial due to: " + str(e))
+                        continue
+
+                    if existing_crc_type != "serial" or serial != existing_crc:
+                        if existing_crc_type and existing_crc_type != "serial":
+                            self.warnings.append(item["label"] + ": should have suffix \'|serial\'")
+
+                        if update_crcs == False:
+                            self.errors.append(item["label"] + ": " + existing_crc + " vs " + serial + " (existing vs calculated)")
+                        else:
+                            modified = True
+                            item["crc32"] = serial + "|serial"
+                            self.errors.append(item["label"] + ": CRC updated from " + existing_crc + " to " + item["crc32"][:-7])
                     continue
-
-                if existing_crc_type != "serial" or serial != existing_crc:
-                    if existing_crc_type and existing_crc_type != "serial":
-                        self.warnings.append(item["label"] + ": should have suffix \'|serial\'")
-
-                    if update_crcs == False:
-                        self.errors.append(item["label"] + ": " + existing_crc + " vs " + serial + " (existing vs calculated)")
-                    else:
-                        modified = True
-                        item["crc32"] = serial + "|serial"
-                        self.errors.append(item["label"] + ": CRC updated from " + existing_crc + " to " + item["crc32"][:-7])
-                continue
 
             # Handle everything else with regular CRC
             file_crc = None
