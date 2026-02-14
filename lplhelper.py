@@ -237,8 +237,10 @@ class LplCrcBaseCommand(LplBaseCommand):
             # Handle CHD / RVZ (uses serial)
             if extension == ".chd" or extension == ".rvz":
                  # These are not currently supported by chd_serial
-                if self.get_current_playlist() == "NEC - PC-FX" or self.get_current_playlist() == "NEC - PC Engine CD - TurboGrafx-CD":
-                    print("Getting normal CRC for PC-FX / PC Engine CD")
+                if self.get_current_playlist() == "NEC - PC-FX" or \
+                   self.get_current_playlist() == "NEC - PC Engine CD - TurboGrafx-CD" or \
+                   self.get_current_playlist() == "SNK - Neo Geo CD":
+                    print("Getting normal CRC for PC-FX / PC Engine CD / Neo Geo CD")
 
                 else:
                     try:

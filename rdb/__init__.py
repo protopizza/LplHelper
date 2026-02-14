@@ -56,6 +56,7 @@ def __get_rdb_files(extension):
                 "Sega - Dreamcast.rdb",
                 "Sega - Saturn.rdb",
                 "Sega - Mega-CD - Sega CD.rdb",
+                "SNK - Neo Geo CD.rdb",
                 "NEC - PC-FX.rdb",
                 "NEC - PC Engine CD - TurboGrafx-CD.rdb",
                 "Philips - CD-i.rdb"
