@@ -11,6 +11,9 @@
     ],
     "macos_rom_path": "",
     "macos_core_path": "",
+    "macos_playlists": [
+    ],
+    "macos_playlists_path": "",
     "name_exclusions": [
     ],
     "retroarch_rdb_path": "",
@@ -18,5 +21,6 @@
     "retroarch_remote_thumbnails_path": "http://thumbnails.libretro.com",
     "translation_label_mapping_file": "",
     "windows_rom_path": "",
-    "windows_core_path": ""
+    "windows_core_path": "",
+    "windows_playlists_path": ""
 }

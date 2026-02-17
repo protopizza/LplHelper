@@ -4,6 +4,7 @@ import copy
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 import zlib
@@ -65,8 +66,11 @@ class LplBaseCommand:
             print('\n'.join(self.warnings))
             print('-' * 10)
 
+    def get_current_filename(self):
+        return os.path.basename(self.view.file_name())
+
     def get_current_playlist(self):
-        current_file = os.path.basename(self.view.window().active_view().file_name())
+        current_file = self.get_current_filename()
         if os.path.splitext(current_file)[1] != ".lpl":
             raise Exception("Not currently viewing playlist file")
         return os.path.splitext(current_file)[0]
@@ -520,7 +524,7 @@ class LplCountThumbnailsCommand(LplThumbnailsBaseCommand, sublime_plugin.TextCom
         self.show_status_message(str(len(self.warnings)) + " warnings found.")
 
 
-class LplValidateThumbnailsCommand(LplThumbnailsBaseCommand,  sublime_plugin.TextCommand):
+class LplValidateThumbnailsCommand(LplThumbnailsBaseCommand, sublime_plugin.TextCommand):
 
      def run(self, edit):
         self.init_thumbnail_command()
@@ -530,7 +534,7 @@ class LplValidateThumbnailsCommand(LplThumbnailsBaseCommand,  sublime_plugin.Tex
         self.show_errors("non-matching thumbnail(s) found", "All thumbnails match.")
 
 
-class LplUpdateThumbnailsCommand(LplThumbnailsBaseCommand,  sublime_plugin.TextCommand):
+class LplUpdateThumbnailsCommand(LplThumbnailsBaseCommand, sublime_plugin.TextCommand):
 
      def run(self, edit):
         self.init_thumbnail_command()
@@ -540,7 +544,7 @@ class LplUpdateThumbnailsCommand(LplThumbnailsBaseCommand,  sublime_plugin.TextC
         self.show_errors("thumbnail(s) updated", "No changes to be made.")
 
 
-class LplAddMissingThumbnailsCommand(LplThumbnailsBaseCommand,  sublime_plugin.TextCommand):
+class LplAddMissingThumbnailsCommand(LplThumbnailsBaseCommand, sublime_plugin.TextCommand):
 
      def run(self, edit):
         self.init_thumbnail_command()
@@ -587,7 +591,7 @@ class LplConvertPathsBaseCommand(LplBaseCommand):
         return self.core_path + basename + self.core_extension
 
 
-class LplConvertPathsForWindowsCommand(LplConvertPathsBaseCommand,  sublime_plugin.TextCommand):
+class LplConvertPathsForWindowsCommand(LplConvertPathsBaseCommand, sublime_plugin.TextCommand):
     path_separator = "\\"
     core_extension = ".dll"
 
@@ -597,12 +601,13 @@ class LplConvertPathsForWindowsCommand(LplConvertPathsBaseCommand,  sublime_plug
         self.core_path = settings.get("windows_core_path", "")
 
         self.get_json_data()
+        print("Converting " + self.get_current_filename() + "...")
         self.convert_paths()
         self.update_data(edit)
         self.show_status_message("Done converting for Windows!")
 
 
-class LplConvertPathsForMacosCommand(LplConvertPathsBaseCommand,  sublime_plugin.TextCommand):
+class LplConvertPathsForMacosCommand(LplConvertPathsBaseCommand, sublime_plugin.TextCommand):
     path_separator = "/"
     core_extension = ".dylib"
 
@@ -612,6 +617,66 @@ class LplConvertPathsForMacosCommand(LplConvertPathsBaseCommand,  sublime_plugin
         self.core_path = settings.get("macos_core_path", "")
 
         self.get_json_data()
+        print("Converting " + self.get_current_filename() + "...")
         self.convert_paths()
         self.update_data(edit)
         self.show_status_message("Done converting for MacOS!")
+
+class LplUpdateMacosPlaylists(LplBaseCommand, sublime_plugin.WindowCommand):
+
+    def convert_view_for_macos(self, target_view, dest_path, current_view, already_open, source_path):
+        self.window.focus_view(current_view)
+        if target_view.is_loading():
+            return sublime.set_timeout(lambda: self.convert_view_for_macos(target_view, dest_path, current_view, already_open, source_path), 500)
+
+        target_view.run_command("lpl_convert_paths_for_macos")
+        target_view.retarget(dest_path)
+        target_view.run_command("save")
+        target_view.close()
+        if already_open:
+            self.window.open_file(source_path)
+            self.window.focus_view(current_view)
+
+    def run(self):
+        self.errors = []
+        settings = sublime.load_settings("LplHelper.sublime-settings")
+        self.macos_playlists = settings.get("macos_playlists", [])
+        self.windows_playlists_path = settings.get("windows_playlists_path", "")
+        self.macos_playlists_path = settings.get("macos_playlists_path", "")
+
+        print('=' * 10)
+
+        if not self.windows_playlists_path or not os.path.isdir(self.windows_playlists_path):
+            raise Exception("'windows_playlists_path' must be a valid directory.")
+
+        if not self.macos_playlists_path or not os.path.isdir(self.macos_playlists_path):
+            raise Exception("'macos_playlists_path' must be a valid directory.")
+
+        targets = set()
+        for playlist in self.macos_playlists:
+            target = os.path.join(self.windows_playlists_path, playlist)
+            if not target or not os.path.isfile(target):
+                raise Exception(target + " is not a valid file.")
+            targets.add(playlist)
+
+        current_view = self.window.active_view()
+
+        for target in targets:
+            source_path = os.path.join(self.windows_playlists_path, target)
+            dest_path = os.path.join(self.macos_playlists_path, target)
+            print("Updating '" + dest_path + "' from '" + source_path + "'...")
+
+            already_open = False
+            target_view = self.window.find_open_file(source_path)
+            if target_view == None:
+                target_view = self.window.open_file(source_path)
+
+            else:
+                if target_view.is_dirty():
+                    self.errors.append("Skipping dirty file: " + source_path)
+                    continue
+                already_open = True
+
+            self.convert_view_for_macos(target_view, dest_path, current_view, already_open, source_path)
+
+        self.show_errors("playlist(s) skipped", "No skipped playlists.")

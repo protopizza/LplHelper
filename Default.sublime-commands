@@ -50,5 +50,9 @@
     {
         "caption": "LplHelper: Convert Paths for MacOS",
         "command": "lpl_convert_paths_for_macos"
+    },
+    {
+        "caption": "LplHelper: Update MacOS Playlists",
+        "command": "lpl_update_macos_playlists"
     }
 ]
