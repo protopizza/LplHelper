@@ -9,13 +9,19 @@ Sample user package settings:
 ```
 {
     "chd_serial_path": "<path>\\chd_serial.exe",
-    "macos_rom_path": "<path>/ROM/",
-    "macos_core_path": "<path>/RetroArch/cores/",
+    "macos_rom_path": "<path>/ROM",
+    "macos_core_path": "<path>/RetroArch/cores",
+    "macos_playlists": [
+        "<lpl_file>",
+        ...
+    ],
+    "macos_playlists_path": "<path>\\playlists",
     "retroarch_rdb_path": "<path>\\Retroarch\\database\\rdb",
     "retroarch_local_thumbnails_path": "<path>\\thumbnails",
     "translation_label_mapping_file": "<path>\\TranslatedRomLabelMapping.json",
-    "windows_rom_path": "<path>\\ROM\\",
-    "windows_core_path": "<path>\\RetroArch\\cores\\"
+    "windows_rom_path": "<path>\\ROM",
+    "windows_core_path": "<path>\\RetroArch\\cores",
+    "windows_playlists_path": "<path>\\RetroArch\\playlists"
 }
 ```
 
