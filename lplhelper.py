@@ -410,12 +410,14 @@ class LplThumbnailsBaseCommand(LplBaseCommand):
         sanitized_label = LplThumbnailsBaseCommand.sanitize_label(label)
         return self.retroarch_remote_thumbnails_path + "/" + quote(self.current_playlist) + "/" + type + "/" + quote(sanitized_label) + ".png"
 
-    def init_thumbnail_command(self, use_logos=True):
+    def init_thumbnail_command(self):
         settings = sublime.load_settings("LplHelper.sublime-settings")
         self.retroarch_local_thumbnails_path = settings.get("retroarch_local_thumbnails_path", "")
         self.retroarch_remote_thumbnails_path = settings.get("retroarch_remote_thumbnails_path", "")
         self.translation_label_mapping_file = settings.get("translation_label_mapping_file", "")
         self.current_playlist = self.get_current_playlist()
+
+        use_logos = settings.get("use_logos", False)
         if use_logos:
             self.thumbnail_types = [LplThumbnailsBaseCommand.BOXARTS, LplThumbnailsBaseCommand.SNAPS, LplThumbnailsBaseCommand.TITLES, LplThumbnailsBaseCommand.LOGOS]
         else:
