@@ -212,7 +212,7 @@ class LplCrcBaseCommand(LplBaseCommand):
             header_tag = f.read(4)
             return header_tag[0] == 0x4e and header_tag[1] == 0x45 and header_tag[2] == 0x53 and header_tag[3] == 0x1a
 
-    def validate_crcs(self, update_crcs=False):
+    def validate_crcs(self, update_crcs=False, only_update_missing=False):
         modified = False
 
         for item in self.json_data["items"]:
@@ -232,6 +232,8 @@ class LplCrcBaseCommand(LplBaseCommand):
 
             existing_crc = item["crc32"].split("|")[0]
             if not item["crc32"] == "DETECT":
+                if only_update_missing:
+                    continue
                 existing_crc_type = item["crc32"].split("|")[1]
             else:
                 existing_crc_type = None
@@ -312,6 +314,16 @@ class LplUpdateCrcCommand(LplCrcBaseCommand, sublime_plugin.TextCommand):
     def run(self, edit):
         self.get_json_data()
         if self.validate_crcs(update_crcs=True):
+            self.update_data(edit)
+        self.show_warnings()
+        self.show_errors("CRC(s) updated", "No changes to be made.")
+
+
+class LplAddMissingCrcCommand(LplCrcBaseCommand, sublime_plugin.TextCommand):
+
+    def run(self, edit):
+        self.get_json_data()
+        if self.validate_crcs(update_crcs=True, only_update_missing=True):
             self.update_data(edit)
         self.show_warnings()
         self.show_errors("CRC(s) updated", "No changes to be made.")

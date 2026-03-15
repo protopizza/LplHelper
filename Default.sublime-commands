@@ -24,6 +24,10 @@
         "command": "lpl_update_crc"
     },
     {
+        "caption": "LplHelper: Add Missing CRC",
+        "command": "lpl_add_missing_crc"
+    },
+    {
         "caption": "LplHelper: Database Check CRC",
         "command": "lpl_database_check_crc"
     },
