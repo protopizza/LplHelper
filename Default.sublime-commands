@@ -4,6 +4,10 @@
         "command": "lpl_sort"
     },
     {
+        "caption": "LplHelper: Validate All Playlists",
+        "command": "lpl_validate_all_playlists"
+    },
+    {
         "caption": "LplHelper: Find Missing Entries",
         "command": "lpl_find_missing_entries"
     },

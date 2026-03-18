@@ -109,19 +109,26 @@ class LplMissingEntriesBaseCommand(LplBaseCommand):
         found_items = set()
 
         for folder in folders:
-            current_folder = set([os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))
-                and f not in self.name_exclusions
-                and os.path.splitext(f)[1] not in self.extension_exclusions])
+            current_folder = set()
+            try:
+                current_folder = set([os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))
+                    and f not in self.name_exclusions
+                    and os.path.splitext(f)[1] not in self.extension_exclusions])
+            except FileNotFoundError as e:
+                sublime.message_dialog(str(e))
+                raise e
 
             included_in_m3u = []
             for item in current_folder:
                 if os.path.splitext(item)[1] != ".m3u":
                     continue
-                with open(item) as file:
-                    for line in file:
+                with open(item) as m3u_file:
+                    for line in m3u_file:
                         included_in_m3u.append(os.path.join(folder, line.rstrip()))
 
             for item in included_in_m3u:
+                if item not in current_folder:
+                    raise FileNotFoundError("Could not find item \'" + item + "\', possibly duplicated in another .m3u")
                 current_folder.remove(item)
 
             found_items.update(current_folder)
@@ -636,61 +643,111 @@ class LplConvertPathsForMacosCommand(LplConvertPathsBaseCommand, sublime_plugin.
         self.update_data(edit)
         self.show_status_message("Done converting for MacOS!")
 
-class LplUpdateMacosPlaylists(LplBaseCommand, sublime_plugin.WindowCommand):
 
-    def convert_view_for_macos(self, target_view, dest_path, current_view, already_open, source_path):
-        self.window.focus_view(current_view)
-        if target_view.is_loading():
-            return sublime.set_timeout(lambda: self.convert_view_for_macos(target_view, dest_path, current_view, already_open, source_path), 500)
+class LplMultiPlaylistBaseCommand(LplBaseCommand, sublime_plugin.WindowCommand):
 
-        target_view.run_command("lpl_convert_paths_for_macos")
-        target_view.retarget(dest_path)
-        target_view.run_command("save")
-        target_view.close()
-        if already_open:
-            self.window.open_file(source_path)
-            self.window.focus_view(current_view)
-
-    def run(self):
-        self.errors = []
+    def init_multi_playlist_command(self):
         settings = sublime.load_settings("LplHelper.sublime-settings")
-        self.macos_playlists = settings.get("macos_playlists", [])
         self.windows_playlists_path = settings.get("windows_playlists_path", "")
-        self.macos_playlists_path = settings.get("macos_playlists_path", "")
-
-        print('=' * 10)
 
         if not self.windows_playlists_path or not os.path.isdir(self.windows_playlists_path):
             raise Exception("'windows_playlists_path' must be a valid directory.")
 
+        self.initial_view = self.window.active_view()
+
+    def get_windows_playlists(self):
+        return [os.path.join(self.windows_playlists_path, f) for f in os.listdir(self.windows_playlists_path) if os.path.isfile(os.path.join(self.windows_playlists_path, f))]
+
+    def get_view_into_file(self, path):
+        target_view = self.window.find_open_file(path)
+        already_open = True
+
+        if target_view == None:
+            target_view = self.window.open_file(path)
+            already_open = False
+
+        return target_view, already_open
+
+
+class LplUpdateMacosPlaylists(LplMultiPlaylistBaseCommand, sublime_plugin.WindowCommand):
+
+    def convert_view_for_macos(self, target_view, already_open, dest_path, source_path):
+        if target_view.is_loading():
+            return sublime.set_timeout(lambda: self.convert_view_for_macos(target_view, already_open, dest_path, source_path), 500)
+
+        target_view.run_command("lpl_convert_paths_for_macos")
+        target_view.retarget(dest_path)
+        target_view.run_command("save")
+
+        target_view.close()
+        if already_open:
+            self.window.open_file(source_path)
+            self.window.focus_view(self.initial_view)
+
+    def run(self):
+        self.init_multi_playlist_command()
+        self.errors = []
+        settings = sublime.load_settings("LplHelper.sublime-settings")
+        windows_playlists = self.get_windows_playlists()
+        self.macos_playlists = settings.get("macos_playlists", [])
+        self.macos_playlists_path = settings.get("macos_playlists_path", "")
         if not self.macos_playlists_path or not os.path.isdir(self.macos_playlists_path):
             raise Exception("'macos_playlists_path' must be a valid directory.")
+        print('=' * 10)
 
         targets = set()
         for playlist in self.macos_playlists:
-            target = os.path.join(self.windows_playlists_path, playlist)
-            if not target or not os.path.isfile(target):
-                raise Exception(target + " is not a valid file.")
+            source_path = os.path.join(self.windows_playlists_path, playlist)
+            if not source_path in windows_playlists:
+                raise Exception(source_path + " is not a valid file.")
             targets.add(playlist)
-
-        current_view = self.window.active_view()
 
         for target in targets:
             source_path = os.path.join(self.windows_playlists_path, target)
             dest_path = os.path.join(self.macos_playlists_path, target)
             print("Updating '" + dest_path + "' from '" + source_path + "'...")
 
-            already_open = False
-            target_view = self.window.find_open_file(source_path)
-            if target_view == None:
-                target_view = self.window.open_file(source_path)
+            target_view, already_open = self.get_view_into_file(source_path)
+            self.window.focus_view(self.initial_view)
+            if target_view.is_dirty():
+                self.errors.append("Skipping dirty file: " + source_path)
+                continue
 
-            else:
-                if target_view.is_dirty():
-                    self.errors.append("Skipping dirty file: " + source_path)
-                    continue
-                already_open = True
+            self.convert_view_for_macos(target_view, already_open, dest_path, source_path)
 
-            self.convert_view_for_macos(target_view, dest_path, current_view, already_open, source_path)
+        self.show_errors("playlist(s) skipped", "No skipped playlists for MacOS update.")
 
-        self.show_errors("playlist(s) skipped", "No skipped playlists.")
+
+class LplValidateAllPlaylists(LplMultiPlaylistBaseCommand, sublime_plugin.WindowCommand):
+
+    def validate_playlist(self, playlist, target_view, already_open):
+        if target_view.is_loading():
+            return sublime.set_timeout(lambda: self.validate_playlist(playlist, target_view, already_open), 500)
+
+        target_view.run_command("lpl_validate_paths")
+        target_view.run_command("lpl_add_missing_entries")
+
+        if not target_view.is_dirty():
+            target_view.close()
+            if already_open:
+                self.window.open_file(playlist)
+                self.window.focus_view(self.initial_view)
+
+    def run(self):
+        self.init_multi_playlist_command()
+        self.errors = []
+        windows_playlists = self.get_windows_playlists()
+        print('=' * 10)
+
+        for playlist in windows_playlists:
+            print("Validating " + playlist + "...")
+
+            target_view, already_open = self.get_view_into_file(playlist)
+            self.window.focus_view(self.initial_view)
+            if target_view.is_dirty():
+                self.errors.append("Skipping dirty file: " + playlist)
+                continue
+
+            self.validate_playlist(playlist, target_view, already_open)
+
+        self.show_errors("playlist(s) skipped", "No skipped playlists for validation.")
