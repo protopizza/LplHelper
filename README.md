@@ -9,10 +9,14 @@ Sample user package settings:
 ```
 {
     "chd_serial_path": "<path>\\chd_serial.exe",
+    "logos_enabled_playlists": [
+        "<playlist_name>.lpl",
+        ...
+    ],
     "macos_rom_path": "<path>/ROM",
     "macos_core_path": "<path>/RetroArch/cores",
     "macos_playlists": [
-        "<lpl_file>",
+        "<playlist_name>.lpl",
         ...
     ],
     "macos_playlists_path": "<path>\\playlists",

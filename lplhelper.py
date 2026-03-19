@@ -424,8 +424,8 @@ class LplThumbnailsBaseCommand(LplBaseCommand):
         self.translation_label_mapping_file = settings.get("translation_label_mapping_file", "")
         self.current_playlist = self.get_current_playlist()
 
-        use_logos = settings.get("use_logos", False)
-        if use_logos:
+        logos_enabled_playlists = settings.get("logos_enabled_playlists", [])
+        if self.current_playlist + ".lpl" in logos_enabled_playlists:
             self.thumbnail_types = [LplThumbnailsBaseCommand.BOXARTS, LplThumbnailsBaseCommand.SNAPS, LplThumbnailsBaseCommand.TITLES, LplThumbnailsBaseCommand.LOGOS]
         else:
             self.thumbnail_types = [LplThumbnailsBaseCommand.BOXARTS, LplThumbnailsBaseCommand.SNAPS, LplThumbnailsBaseCommand.TITLES]

@@ -9,6 +9,7 @@
         ".pcm",
         ".ngp"
     ],
+    "logos_enabled_playlists": [],
     "macos_rom_path": "",
     "macos_core_path": "",
     "macos_playlists": [
@@ -20,7 +21,6 @@
     "retroarch_local_thumbnails_path": "",
     "retroarch_remote_thumbnails_path": "http://thumbnails.libretro.com",
     "translation_label_mapping_file": "",
-    "use_logos": false,
     "windows_rom_path": "",
     "windows_core_path": "",
     "windows_playlists_path": ""
