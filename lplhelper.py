@@ -83,9 +83,7 @@ class LplSortCommand(LplBaseCommand, sublime_plugin.TextCommand):
 
     def run(self, edit):
         self.get_json_data()
-
         self.json_data["items"].sort(key=self.sorter)
-
         self.update_data(edit)
         self.show_status_message("Done sorting!")
 
@@ -575,6 +573,105 @@ class LplAddMissingThumbnailsCommand(LplThumbnailsBaseCommand, sublime_plugin.Te
         self.show_errors("thumbnail(s) updated", "No changes to be made.")
 
 
+class LplRenameThumbnailsBaseCommand(LplThumbnailsBaseCommand):
+
+    def init_rename_thumbnails(self):
+        self.errors = []
+        settings = sublime.load_settings("LplHelper.sublime-settings")
+        retroarch_local_thumbnails_path = settings.get("retroarch_local_thumbnails_path", '')
+
+        path_types = [self.BOXARTS, self.SNAPS, self.TITLES]
+
+        system = self.get_current_playlist()
+        self.base_path = os.path.join(retroarch_local_thumbnails_path, system)
+
+        logos_enabled = system + ".lpl" in settings.get("logos_enabled_playlists", [])
+        if logos_enabled:
+            path_types.append(self.LOGOS)
+
+        self.all_existing_filenames = {}
+
+        for path_type in path_types:
+            folder = os.path.join(self.base_path, path_type)
+            for f in os.listdir(folder):
+                if os.path.isfile(os.path.join(folder, f)):
+                    if f not in self.all_existing_filenames:
+                        self.all_existing_filenames[f] = set()
+                    self.all_existing_filenames[f].add(path_type)
+
+
+class LplRenameThumbnailsCommand(LplRenameThumbnailsBaseCommand, sublime_plugin.TextCommand):
+
+    def run(self, edit, source_thumbnail, destination_thumbnail):
+        self.init_rename_thumbnails()
+
+        if source_thumbnail == destination_thumbnail:
+            self.show_status_message("No rename -- destination name matches source name!")
+            return
+
+        if not destination_thumbnail.endswith('.png'):
+            error = "Destination thumbnail ('{}') must end with '.png'!".format(destination_thumbnail)
+            self.show_status_message(error)
+            sublime.message_dialog(error)
+            return
+
+        dialog = "Renaming:\n  '{}'\nto\n  '{}'\nin\n{}\n?".format(source_thumbnail, destination_thumbnail, self.all_existing_filenames[source_thumbnail])
+        print(dialog)
+        confirmed = sublime.ok_cancel_dialog(dialog, ok_title='Confirm', title="Confirm Rename?")
+
+        if confirmed:
+            for path_type in self.all_existing_filenames[source_thumbnail]:
+                source_path = os.path.join(self.base_path, path_type, source_thumbnail)
+                dest_path = os.path.join(self.base_path, path_type, destination_thumbnail)
+
+                print("Renaming '{}' to '{}'...".format(source_path, dest_path))
+
+                try:
+                    os.rename(source_path, dest_path)
+                except Exception as e:
+                    print(e)
+                    self.errors.append(str(e))
+
+            self.show_errors("thumbnail(s) had an error", "No changes to be made.")
+
+        else:
+            self.show_status_message("Rename canceled.")
+
+    def input(self, args):
+        if "source_thumbnail" not in args:
+            return SourceThumbnailInputHandler(self.view)
+        elif "destination_thumbnail" not in args:
+            return DestinationThumbnailInputHandler(args["source_thumbnail"])
+        else:
+            return None
+
+
+class SourceThumbnailInputHandler(LplRenameThumbnailsBaseCommand, sublime_plugin.ListInputHandler):
+    def __init__(self, view):
+        self.view = view
+        self.init_rename_thumbnails()
+
+    def list_items(self):
+        return sorted(self.all_existing_filenames.keys())
+
+    def preview(self, value):
+        return "Source: {} in {}".format(value, self.all_existing_filenames[value])
+
+
+class DestinationThumbnailInputHandler(sublime_plugin.TextInputHandler):
+    def __init__(self, source_thumbnail_name):
+        self.source_thumbnail_name = source_thumbnail_name
+
+    def placeholder(self):
+        return "What to rename as?"
+
+    def initial_text(self):
+        return self.source_thumbnail_name
+
+    def preview(self, text):
+        return "{} => {}".format(self.source_thumbnail_name, text)
+
+
 class LplConvertPathsBaseCommand(LplBaseCommand):
     path_separator = "!"
     core_extension = ".?"
@@ -706,6 +803,7 @@ class LplUpdateAllMacosPlaylists(LplMultiPlaylistBaseCommand):
 
     def run(self):
         self.init_multi_playlist_command()
+        self.errors = []
         settings = sublime.load_settings("LplHelper.sublime-settings")
         windows_playlists = self.get_windows_playlists()
         self.macos_playlists = settings.get("macos_playlists", [])
@@ -739,6 +837,7 @@ class LplValidateAllPlaylists(LplMultiPlaylistBaseCommand):
 
     def run(self):
         self.init_multi_playlist_command()
+        self.errors = []
         self.run_func_on_all_playlists(self.validate_playlist)
         self.show_errors("playlist(s) skipped", "No skipped playlists for validation.")
 
@@ -750,5 +849,7 @@ class LplCountAllThumbnails(LplMultiPlaylistBaseCommand):
 
     def run(self):
         self.init_multi_playlist_command()
+        self.errors = []
         self.run_func_on_all_playlists(self.count_thumbnails_playlist)
         self.show_errors("playlist(s) skipped", "No skipped playlists for thumbnail counting.")
+

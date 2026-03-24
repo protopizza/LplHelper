@@ -60,6 +60,10 @@
         "command": "lpl_update_thumbnails"
     },
     {
+        "caption": "LplHelper: Rename Thumbnails",
+        "command": "lpl_rename_thumbnails"
+    },
+    {
         "caption": "LplHelper: Convert Paths for Windows",
         "command": "lpl_convert_paths_for_windows"
     },
