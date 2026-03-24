@@ -20,11 +20,11 @@ class LplBaseCommand:
     errors = []
     warnings = []
 
-    def get_full_region(self):
+    def __get_full_region(self):
         return sublime.Region(0, self.view.size())
 
     def get_json_data(self):
-        body = self.view.substr(self.get_full_region())
+        body = self.view.substr(self.__get_full_region())
         self.json_data = json.loads(body, object_pairs_hook=OrderedDict)
         self.errors = []
         self.warnings = []
@@ -40,7 +40,7 @@ class LplBaseCommand:
         updated_data = json.dumps(self.json_data, indent=2, separators=(',', ': '))
         updated_data += '\n'
 
-        self.view.replace(edit, self.get_full_region(), updated_data)
+        self.view.replace(edit, self.__get_full_region(), updated_data)
 
     def show_status_message(self, msg, print_to_console=True):
         if print_to_console:
@@ -668,25 +668,44 @@ class LplMultiPlaylistBaseCommand(LplBaseCommand, sublime_plugin.WindowCommand):
 
         return target_view, already_open
 
+    def schedule_run_func_on_playlist(self, playlist_file, func, *args, **kwargs):
+        target_view, already_open = self.get_view_into_file(playlist_file)
+        self.window.focus_view(self.initial_view)
+        if target_view.is_dirty():
+            self.errors.append("Skipping dirty file: " + playlist_file)
+            return
 
-class LplUpdateMacosPlaylists(LplMultiPlaylistBaseCommand, sublime_plugin.WindowCommand):
+        self.__async_run_func_on_playlist(playlist_file, target_view, already_open, func, *args, **kwargs)
 
-    def convert_view_for_macos(self, target_view, already_open, dest_path, source_path):
+    def __async_run_func_on_playlist(self, playlist_file, target_view, already_open, func, *args, **kwargs):
         if target_view.is_loading():
-            return sublime.set_timeout(lambda: self.convert_view_for_macos(target_view, already_open, dest_path, source_path), 500)
+            return sublime.set_timeout(lambda: self.__async_run_func_on_playlist(playlist_file, target_view, already_open, func, *args, **kwargs), 500)
 
+        func(target_view, *args, **kwargs)
+
+        if not target_view.is_dirty():
+            target_view.close()
+            if already_open:
+                self.window.open_file(playlist_file)
+                self.window.focus_view(self.initial_view)
+
+    def run_func_on_all_playlists(self, func):
+        windows_playlists = self.get_windows_playlists()
+        print('=' * 10)
+        for playlist in windows_playlists:
+            print("Running on " + playlist + "...")
+            self.schedule_run_func_on_playlist(playlist, func)
+
+
+class LplUpdateAllMacosPlaylists(LplMultiPlaylistBaseCommand):
+
+    def convert_view_for_macos(self, target_view, dest_path):
         target_view.run_command("lpl_convert_paths_for_macos")
         target_view.retarget(dest_path)
         target_view.run_command("save")
 
-        target_view.close()
-        if already_open:
-            self.window.open_file(source_path)
-            self.window.focus_view(self.initial_view)
-
     def run(self):
         self.init_multi_playlist_command()
-        self.errors = []
         settings = sublime.load_settings("LplHelper.sublime-settings")
         windows_playlists = self.get_windows_playlists()
         self.macos_playlists = settings.get("macos_playlists", [])
@@ -707,47 +726,29 @@ class LplUpdateMacosPlaylists(LplMultiPlaylistBaseCommand, sublime_plugin.Window
             dest_path = os.path.join(self.macos_playlists_path, target)
             print("Updating '" + dest_path + "' from '" + source_path + "'...")
 
-            target_view, already_open = self.get_view_into_file(source_path)
-            self.window.focus_view(self.initial_view)
-            if target_view.is_dirty():
-                self.errors.append("Skipping dirty file: " + source_path)
-                continue
-
-            self.convert_view_for_macos(target_view, already_open, dest_path, source_path)
+            self.schedule_run_func_on_playlist(source_path, self.convert_view_for_macos, dest_path)
 
         self.show_errors("playlist(s) skipped", "No skipped playlists for MacOS update.")
 
 
-class LplValidateAllPlaylists(LplMultiPlaylistBaseCommand, sublime_plugin.WindowCommand):
+class LplValidateAllPlaylists(LplMultiPlaylistBaseCommand):
 
-    def validate_playlist(self, playlist, target_view, already_open):
-        if target_view.is_loading():
-            return sublime.set_timeout(lambda: self.validate_playlist(playlist, target_view, already_open), 500)
-
+    def validate_playlist(self, target_view):
         target_view.run_command("lpl_validate_paths")
         target_view.run_command("lpl_add_missing_entries")
 
-        if not target_view.is_dirty():
-            target_view.close()
-            if already_open:
-                self.window.open_file(playlist)
-                self.window.focus_view(self.initial_view)
+    def run(self):
+        self.init_multi_playlist_command()
+        self.run_func_on_all_playlists(self.validate_playlist)
+        self.show_errors("playlist(s) skipped", "No skipped playlists for validation.")
+
+
+class LplCountAllThumbnails(LplMultiPlaylistBaseCommand):
+
+    def count_thumbnails_playlist(self, target_view):
+        target_view.run_command("lpl_count_thumbnails")
 
     def run(self):
         self.init_multi_playlist_command()
-        self.errors = []
-        windows_playlists = self.get_windows_playlists()
-        print('=' * 10)
-
-        for playlist in windows_playlists:
-            print("Validating " + playlist + "...")
-
-            target_view, already_open = self.get_view_into_file(playlist)
-            self.window.focus_view(self.initial_view)
-            if target_view.is_dirty():
-                self.errors.append("Skipping dirty file: " + playlist)
-                continue
-
-            self.validate_playlist(playlist, target_view, already_open)
-
-        self.show_errors("playlist(s) skipped", "No skipped playlists for validation.")
+        self.run_func_on_all_playlists(self.count_thumbnails_playlist)
+        self.show_errors("playlist(s) skipped", "No skipped playlists for thumbnail counting.")
